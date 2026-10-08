@@ -197,8 +197,10 @@ function explicitQ(unitId, i) {
   if (q.t === 'fill') {
     const part = q.q.split('→').pop().split(' (')[0];
     if (part.includes('___')) say = part.replace('___', q.a).trim();
+  } else if (q.t === 'dialog') {
+    say = q.a;
   }
-  return { ...q, key: `q:${unitId}:${i}`, say };
+  return { ...q, o: shuffle(q.o), key: `q:${unitId}:${i}`, say };
 }
 
 function buildLesson(unitId, n = 10) {
@@ -249,7 +251,8 @@ function describeKey(key) {
   }
   if (type === 'q') {
     const q = info.unit.qs?.[+arg];
-    return q && { e: info.unit.emoji, main: q.q, sub: 'Jawaban: ' + q.a, level: info.level };
+    const main = q && (q.lines ? q.lines.map(l => `${l[0]}: ${l[1]}`).join(' / ') : q.q);
+    return q && { e: info.unit.emoji, main, sub: 'Jawaban: ' + q.a, level: info.level };
   }
   if (type === 's') {
     const s = info.unit.sentences?.[+arg];
@@ -314,7 +317,7 @@ function renderLesson() {
     </div>`;
   $('#quit').onclick = confirmQuit;
   const box = $('#q');
-  ({ pic: qPic, listen: qListen, spell: qSpell, mc: qChoice, fill: qChoice, order: qOrder, match: qMatch })[q.t](q, box);
+  ({ pic: qPic, listen: qListen, spell: qSpell, mc: qChoice, fill: qChoice, order: qOrder, match: qMatch, dialog: qDialog, read: qRead })[q.t](q, box);
 }
 
 function confirmQuit() {
@@ -395,6 +398,29 @@ function qChoice(q, box) {
   bindSpeak(box);
   bindOptions(box, q, () => { const b = $('.blank', box); if (b) b.textContent = q.a; });
   if (q.sayPrompt && S.autoplay) setTimeout(() => L && speak(q.sayPrompt), 250);
+}
+
+function qDialog(q, box) {
+  const spoken = q.lines.filter(l => l[1] !== '___').map(l => l[1]).join(' ');
+  box.innerHTML = `
+    <div class="q-type">💬 Percakapan</div>
+    <div class="q-prompt">Pilih respons yang paling tepat ${canSpeak ? `<button class="inline-speak" data-say="${esc(spoken)}" aria-label="Dengarkan">🔊</button>` : ''}</div>
+    <div class="chat">${q.lines.map(([who, text], i) => `
+      <div class="bubble ${i % 2 ? 'right' : 'left'}"><small>${esc(who)}</small>${text === '___' ? '<span class="blank">…</span>' : esc(text)}</div>`).join('')}
+    </div>
+    ${optionsHTML(q.o)}`;
+  bindSpeak(box);
+  bindOptions(box, q, () => { const b = $('.blank', box); if (b) b.textContent = q.a; });
+}
+
+function qRead(q, box) {
+  box.innerHTML = `
+    <div class="q-type">📖 Membaca</div>
+    <div class="passage">${esc(q.text)} ${canSpeak ? `<button class="inline-speak" data-say="${esc(q.text)}" aria-label="Dengarkan bacaan">🔊</button>` : ''}</div>
+    <div class="q-prompt">${esc(q.q)}</div>
+    ${optionsHTML(q.o)}`;
+  bindSpeak(box);
+  bindOptions(box, q);
 }
 
 /* Susun huruf (spell) & susun kata (order) memakai mekanisme ubin yang sama */
@@ -984,6 +1010,15 @@ function renderSettings() {
       </div>
     </section>
 
+    <div class="section-title">📲 Aplikasi</div>
+    <section class="card">
+      ${isStandalone() ? '<p style="margin:0">✅ English Quest sudah terpasang sebagai aplikasi. Bisa dipakai offline juga.</p>'
+        : installPrompt ? `<p class="muted" style="margin-top:0">Pasang English Quest di HP/laptop agar bisa dibuka dari layar utama dan dipakai offline.</p>
+          <button class="btn" id="install">📲 Pasang Aplikasi</button>`
+        : isIOS() ? '<p style="margin:0">Di iPhone/iPad: buka di Safari, ketuk tombol <b>Bagikan</b> (kotak dengan panah ke atas), lalu pilih <b>Tambah ke Layar Utama</b>.</p>'
+        : '<p style="margin:0">Buka menu browser (⋮) lalu pilih <b>Instal aplikasi</b> / <b>Tambahkan ke layar utama</b>.</p>'}
+    </section>
+
     <div class="section-title">💾 Data Progres</div>
     <section class="card">
       <p class="muted" style="margin-top:0">Progres tersimpan di browser ini. Ekspor untuk cadangan atau pindah perangkat.</p>
@@ -995,6 +1030,8 @@ function renderSettings() {
       <input type="file" id="import-file" accept="application/json" hidden>
     </section>`;
   bindProfile($('#profile'));
+  const ib = $('#install');
+  if (ib) ib.onclick = promptInstall;
   $$('#themes button').forEach(b => b.onclick = () => { S.theme = b.dataset.t; save(); applyTheme(); renderSettings(); });
   $('#sound').onchange = e => { S.sound = e.target.checked; save(); sfx.tap(); };
   $('#autoplay').onchange = e => { S.autoplay = e.target.checked; save(); };
@@ -1162,6 +1199,36 @@ document.addEventListener('keydown', e => {
     if (opt && !opt.disabled) opt.click();
   }
 });
+
+/* ============================================================
+ * PWA: service worker & pemasangan
+ * ============================================================ */
+let installPrompt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  installPrompt = e;
+  $('#install-btn').classList.remove('hidden');
+  if (location.hash === '#/settings') renderSettings();
+});
+window.addEventListener('appinstalled', () => {
+  installPrompt = null;
+  $('#install-btn').classList.add('hidden');
+  toast('🎉', 'Aplikasi terpasang!', 'Buka English Quest dari layar utama.');
+});
+async function promptInstall() {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  $('#install-btn').classList.add('hidden');
+  if (location.hash === '#/settings') renderSettings();
+}
+$('#install-btn').onclick = promptInstall;
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 
 window.addEventListener('hashchange', route);
 applyTheme();

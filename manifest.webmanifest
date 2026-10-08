@@ -1,0 +1,23 @@
+{
+  "name": "English Quest — Belajar Bahasa Inggris",
+  "short_name": "English Quest",
+  "description": "Game belajar bahasa Inggris dari TK sampai Advanced",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "id",
+  "background_color": "#0e1120",
+  "theme_color": "#6c5ce7",
+  "categories": ["education", "games", "kids"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Progres", "url": "/#/progress", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Ulangi Kesalahan", "url": "/#/review", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
