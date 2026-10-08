@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>English Quest</title>
+  <meta name="description" content="Game belajar bahasa Inggris dari TK sampai Advanced">
+  <meta name="theme-color" content="#6c5ce7">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Pasang tema sedini mungkin agar tidak berkedip.
+    try {
+      const t = JSON.parse(localStorage.getItem('englishQuest.v1') || '{}').theme;
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="topbar" id="topbar">
+    <a href="#/" class="brand"><span class="brand-logo">🦊</span><span class="brand-name">English Quest</span></a>
+    <nav class="nav" id="nav">
+      <a href="#/" data-nav="home"><span>🏠</span><b>Belajar</b></a>
+      <a href="#/progress" data-nav="progress"><span>📈</span><b>Progres</b></a>
+      <a href="#/review" data-nav="review"><span>🔁</span><b>Ulangi</b></a>
+      <a href="#/settings" data-nav="settings"><span>⚙️</span><b>Atur</b></a>
+    </nav>
+    <div class="stats-mini">
+      <span class="chip" id="chip-streak" title="Streak harian">🔥 <b>0</b></span>
+      <span class="chip" id="chip-xp" title="XP hari ini / target">⚡ <b>0</b></span>
+      <button class="icon-btn" id="theme-btn" aria-label="Ganti tema" title="Ganti tema">🌙</button>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
